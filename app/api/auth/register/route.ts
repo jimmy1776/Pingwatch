@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password,12)
 
-    const {user,org} = await db.$transaction(async (tx) => {
+    const {user,org} = await db.$transaction(async (tx: typeof db) => {
         const newUser = await tx.user.create({data:{email,passwordHash}})
         const org = await tx.organization.create({ data: { name: `${email.split('@')[0]}'s workspace` } })
         await tx.orgMember.create({data:{userId: newUser.id,orgId: org.id, role:'owner'}})
