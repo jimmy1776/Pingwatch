@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String?
+  googleId     String?     @unique
+  createdAt    DateTime    @default(now())
+  memberships  OrgMember[]
+}
+
+model Organization {
+  id           String        @id @default(cuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  members      OrgMember[]
+  monitors     Monitor[]
+  subscription Subscription?
+  invites      Invite[]
+}
+
+model OrgMember {
+  id     String       @id @default(cuid())
+  role   String // owner | admin | member
+  userId String
+  orgId  String
+  user   User         @relation(fields: [userId], references: [id])
+  org    Organization @relation(fields: [orgId], references: [id])
+}
+
+model Monitor {
+  id           String         @id @default(cuid())
+  url          String
+  intervalSecs Int
+  active       Boolean        @default(true)
+  orgId        String
+  org          Organization   @relation(fields: [orgId], references: [id])
+  checks       MonitorCheck[]
+  incidents    Incident[]
+  createdAt    DateTime       @default(now())
+}
+
+model MonitorCheck {
+  id         String   @id @default(cuid())
+  monitorId  String
+  monitor    Monitor  @relation(fields: [monitorId], references: [id])
+  statusCode Int?
+  latencyMs  Int?
+  ok         Boolean
+  checkedAt  DateTime @default(now())
+}
+
+model Incident {
+  id         String    @id @default(cuid())
+  monitorId  String
+  monitor    Monitor   @relation(fields: [monitorId], references: [id])
+  startedAt  DateTime  @default(now())
+  resolvedAt DateTime?
+  alertSent  Boolean   @default(false)
+}
+
+model Subscription {
+  id               String       @id @default(cuid())
+  orgId            String       @unique
+  org              Organization @relation(fields: [orgId], references: [id])
+  stripeCustomerId String
+  stripePriceId    String
+  plan             String // free | pro | business
+  status           String // active | canceled | past_due
+  currentPeriodEnd DateTime
+}
+
+model AlertContact {
+  id    String @id @default(cuid())
+  orgId String
+  email String
+}
+
+model Invite {
+  id        String       @id @default(cuid())
+  orgId     String
+  email     String
+  token     String       @unique
+  expiresAt DateTime
+  createdAt DateTime     @default(now())
+  org       Organization @relation(fields: [orgId], references: [id])
+}
