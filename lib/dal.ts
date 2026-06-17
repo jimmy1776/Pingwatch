@@ -14,7 +14,7 @@ export const verifySession = cache(async() => {
 export const getCurrentUser = cache(async ()=>{
     const session = await getSession()
     if (!session?.userId) return null
-    return db.user.findUnique({
+    return await db.user.findUnique({
         where:{id: session.userId},
         select : {id :true, email:true, createdAt:true}
     })

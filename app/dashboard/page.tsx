@@ -49,7 +49,7 @@ export default async function DashboardPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {monitors.map((monitor) => {
+                            {monitors.map((monitor: (typeof monitors)[number]) => {
                                 const latest = monitor.checks[0];
                                 const isUp = latest?.ok ?? null;
                                 return (

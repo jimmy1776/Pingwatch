@@ -29,13 +29,13 @@ export async function POST(req:NextRequest) {
                 stripePriceId: subscription.items.data[0].price.id,
                 plan: subscription.items.data[0].price.id === process.env.STRIPE_PRICE_PRO ? 'pro' : 'business',
                 status : subscription.status,
-                currentPeriodEnd: new Date(subscription.items.data[0].current_period_end * 1000),
+                currentPeriodEnd: new Date((subscription.current_period_end ?? 0) * 1000),
             },
-            update: { 
-                status: subscription.status, 
+            update: {
+                status: subscription.status,
                 stripePriceId: subscription.items.data[0].price.id,
                 plan: subscription.items.data[0].price.id === process.env.STRIPE_PRICE_PRO ? 'pro' : 'business',
-                currentPeriodEnd : new Date(subscription.items.data[0].current_period_end *1000), 
+                currentPeriodEnd: new Date((subscription.current_period_end ?? 0) * 1000),
             },
         });
     }

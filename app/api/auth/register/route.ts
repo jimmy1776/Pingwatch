@@ -1,7 +1,8 @@
-import {NextRequest, NextResponse} from 'next/server' 
+import {NextRequest} from 'next/server'
 import bcrypt from 'bcryptjs'
 import {db} from '@/lib/db'
 import {createSession} from '@/lib/session'
+import { Prisma } from '@prisma/client'
 
 export async function POST(req: NextRequest) {
     const {email,password} = await req.json()
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const passwordHash = await bcrypt.hash(password,12)
 
-    const {user,org} = await db.$transaction(async (tx: typeof db) => {
+    const {user,org} = await db.$transaction(async (tx: Prisma.TransactionClient) => {
         const newUser = await tx.user.create({data:{email,passwordHash}})
         const org = await tx.organization.create({ data: { name: `${email.split('@')[0]}'s workspace` } })
         await tx.orgMember.create({data:{userId: newUser.id,orgId: org.id, role:'owner'}})
