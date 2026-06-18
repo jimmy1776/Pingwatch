@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getSession } from '@/lib/session';
 import { db } from '@/lib/db';
 import AddMonitorForm from './AddMonitorForm';
@@ -30,6 +31,9 @@ export default async function DashboardPage() {
                     <span className="text-xs bg-indigo-100 text-indigo-700 font-medium px-2 py-0.5 rounded-full capitalize">{plan}</span>
                 </div>
                 <div className="flex items-center gap-4">
+                    <Link href="/dashboard/incidents" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                        Incidents
+                    </Link>
                     <LogoutButton />
                     <AddMonitorForm orgId={session.orgId} />
                 </div>
