@@ -19,23 +19,26 @@ export async function POST(req:NextRequest) {
     if(event.type == 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
         const orgId = session.metadata?.orgId!;
-        const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const subscription = await stripe.subscriptions.retrieve(session.subscription as string) as any;
+        const priceId = subscription.items.data[0].price.id;
+        const periodEnd = new Date((subscription.current_period_end ?? 0) * 1000);
 
         await db.subscription.upsert({
             where : {orgId},
             create:{
                 orgId,
                 stripeCustomerId: session.customer as string,
-                stripePriceId: subscription.items.data[0].price.id,
-                plan: subscription.items.data[0].price.id === process.env.STRIPE_PRICE_PRO ? 'pro' : 'business',
+                stripePriceId: priceId,
+                plan: priceId === process.env.STRIPE_PRICE_PRO ? 'pro' : 'business',
                 status : subscription.status,
-                currentPeriodEnd: new Date((subscription.current_period_end ?? 0) * 1000),
+                currentPeriodEnd: periodEnd,
             },
             update: {
                 status: subscription.status,
-                stripePriceId: subscription.items.data[0].price.id,
-                plan: subscription.items.data[0].price.id === process.env.STRIPE_PRICE_PRO ? 'pro' : 'business',
-                currentPeriodEnd: new Date((subscription.current_period_end ?? 0) * 1000),
+                stripePriceId: priceId,
+                plan: priceId === process.env.STRIPE_PRICE_PRO ? 'pro' : 'business',
+                currentPeriodEnd: periodEnd,
             },
         });
     }
