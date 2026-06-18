@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 
-  const publicRoutes = ['/login', '/register', '/api/auth/login', '/api/auth/register', '/invite', '/api/invites', '/api/stripe/webhook']
+  const publicRoutes = ['/', '/login', '/register', '/api/auth/login', '/api/auth/register', '/invite', '/api/invites', '/api/stripe/webhook']
 
   export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl
