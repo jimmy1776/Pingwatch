@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PingWatch
 
-## Getting Started
+**Know when your site goes down — before your users do.**
 
-First, run the development server:
+PingWatch monitors your websites around the clock and sends you an email the moment something goes wrong — and again when it recovers. You add a URL, and PingWatch handles the rest.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## What it does
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Pings your URLs on a schedule and records the status and response time
+- Detects when a site goes down and sends you an email alert immediately
+- Sends a second email when the site comes back up
+- Tracks incident history so you can see past outages and how long they lasted
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How organizations work
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+When you register, PingWatch creates an organization for you automatically. Monitors belong to the organization, not to you personally. You can invite teammates to your org so everyone shares the same dashboard and sees the same monitors. Plan limits apply to the org as a whole — a Pro org gets 20 monitors total, shared across all members.
 
-## Learn More
+## Plans
 
-To learn more about Next.js, take a look at the following resources:
+| Plan     | Price  | Monitors  | Check Interval |
+|----------|--------|-----------|----------------|
+| Free     | $0     | 3 URLs    | Every 5 min    |
+| Pro      | $9/mo  | 20 URLs   | Every 1 min    |
+| Business | $29/mo | Unlimited | Every 30 sec   |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tech stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend:** Next.js (App Router) + Tailwind CSS
+- **Backend:** Next.js Route Handlers
+- **Database:** Supabase (hosted Postgres) + Prisma ORM
+- **Auth:** JWT + bcrypt
+- **Background jobs:** Vercel Cron
+- **Email:** Resend
+- **Billing:** Stripe Checkout + Webhooks
+- **Cache:** Upstash Redis
+- **Deploy:** Vercel
 
-## Deploy on Vercel
+## Live demo
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[pingwatch2.vercel.app](https://pingwatch2.vercel.app)
