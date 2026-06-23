@@ -25,8 +25,16 @@
 - `app/api/auth/switch-org/route.ts` — `POST` verifies membership then re-issues session cookie with new `orgId`
 - `app/invite/accept/page.tsx` — UI page linked from invite email; calls accept then switch-org, redirects to dashboard
 
-## Steps 4–10 — Not started
-4. Monitor CRUD
+## Step 4 — Monitor CRUD ✅
+- `app/api/orgs/[orgId]/monitors/route.ts`
+  - `GET` — lists all org monitors with latest check status (requires member)
+  - `POST` — creates a monitor; validates URL and intervalSecs (30/60/300); enforces plan limits (requires admin)
+- `app/api/orgs/[orgId]/monitors/[monitorId]/route.ts`
+  - `GET` — returns monitor + last 50 checks + last 10 incidents (requires member)
+  - `PATCH` — updates url / intervalSecs / active; validates each field; verifies monitor belongs to org (requires admin)
+  - `DELETE` — deletes checks and incidents first in a transaction, then the monitor; verifies ownership (requires admin); returns 204
+
+## Steps 5–10 — Not started
 5. Background pinger (Vercel Cron)
 6. Incident detection + email alerts (Resend)
 7. Dashboard UI

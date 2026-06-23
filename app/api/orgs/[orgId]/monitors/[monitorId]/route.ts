@@ -1,49 +1,104 @@
-import {NextRequest} from 'next/server'; 
-import {db} from '@/lib/db'; 
-import {requireOrgRole}  from '@/lib/dal'; 
+import { NextRequest } from 'next/server'
+import { db } from '@/lib/db'
+import { requireOrgRole } from '@/lib/dal'
 
-export async function GET(req:NextRequest, {params}:{params:Promise<{orgId:string, monitorId: string}>}) {
-    const {orgId,monitorId} = await params; 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ orgId: string; monitorId: string }> }
+) {
+  const { orgId, monitorId } = await params
+  await requireOrgRole('member', orgId)
 
-    const orgRole = await requireOrgRole('member',orgId); 
+  const monitor = await db.monitor.findFirst({
+    where: { id: monitorId, orgId },
+    select: {
+      id: true,
+      url: true,
+      intervalSecs: true,
+      active: true,
+      createdAt: true,
+      checks: {
+        take: 50,
+        orderBy: { checkedAt: 'desc' },
+        select: { id: true, ok: true, statusCode: true, latencyMs: true, checkedAt: true },
+      },
+      incidents: {
+        take: 10,
+        orderBy: { startedAt: 'desc' },
+        select: { id: true, startedAt: true, resolvedAt: true },
+      },
+    },
+  })
 
-    const monitor = await db.monitor.findFirst({where:{id:monitorId,orgId}})
-
-    if(!monitor) { 
-        return Response.json({error: 'monitor does not exist'}, {status:404});
-    } 
-
-    return Response.json(monitor,{status:200});
-
+  if (!monitor) return Response.json({ error: 'Not found' }, { status: 404 })
+  return Response.json(monitor)
 }
 
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ orgId: string; monitorId: string }> }
+) {
+  const { orgId, monitorId } = await params
+  await requireOrgRole('admin', orgId)
 
-export async function PATCH(req:NextRequest, {params}:{params:Promise<{orgId:string,monitorId:string}>}) { 
-    const {orgId,monitorId} = await params;
+  const monitor = await db.monitor.findFirst({ where: { id: monitorId, orgId } })
+  if (!monitor) return Response.json({ error: 'Not found' }, { status: 404 })
 
-    const orgRole = await requireOrgRole('member',orgId); 
+  const body = await req.json()
+  const data: Record<string, unknown> = {}
 
-    const {url,intervalSecs} = await req.json(); 
+  if (body.url !== undefined) {
+    if (typeof body.url !== 'string') {
+      return Response.json({ error: 'url must be a string' }, { status: 400 })
+    }
+    try { new URL(body.url) } catch {
+      return Response.json({ error: 'Invalid URL' }, { status: 400 })
+    }
+    data.url = body.url
+  }
 
-   await db.monitor.update({where:{id:monitorId}, data:{url,intervalSecs}});
+  if (body.intervalSecs !== undefined) {
+    if (![30, 60, 300].includes(body.intervalSecs)) {
+      return Response.json({ error: 'intervalSecs must be 30, 60, or 300' }, { status: 400 })
+    }
+    data.intervalSecs = body.intervalSecs
+  }
 
-   return Response.json({ok:true}, {status:200}); 
+  if (body.active !== undefined) {
+    if (typeof body.active !== 'boolean') {
+      return Response.json({ error: 'active must be a boolean' }, { status: 400 })
+    }
+    data.active = body.active
+  }
 
+  if (Object.keys(data).length === 0) {
+    return Response.json({ error: 'No fields to update' }, { status: 400 })
+  }
+
+  const updated = await db.monitor.update({
+    where: { id: monitorId },
+    data,
+    select: { id: true, url: true, intervalSecs: true, active: true, createdAt: true },
+  })
+
+  return Response.json(updated)
 }
 
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ orgId: string; monitorId: string }> }
+) {
+  const { orgId, monitorId } = await params
+  await requireOrgRole('admin', orgId)
 
-export async function DELETE(req:NextRequest, {params}:{params:Promise<{orgId:string,monitorId:string}>}) {
-    const {orgId,monitorId} = await params;
+  const monitor = await db.monitor.findFirst({ where: { id: monitorId, orgId } })
+  if (!monitor) return Response.json({ error: 'Not found' }, { status: 404 })
 
-    // only admins can delete
-    const orgRole = await requireOrgRole('admin', orgId);
-    
-    await db.monitor.delete({where:{id:monitorId}}); 
+  await db.$transaction([
+    db.monitorCheck.deleteMany({ where: { monitorId } }),
+    db.incident.deleteMany({ where: { monitorId } }),
+    db.monitor.delete({ where: { id: monitorId } }),
+  ])
 
-    return Response.json({ok:true},{status:200});    
-
+  return new Response(null, { status: 204 })
 }
-
-
-
-
