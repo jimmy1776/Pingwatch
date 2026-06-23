@@ -1,45 +1,39 @@
-//accept invite endpoint 
-import {NextRequest} from 'next/server';
-import {db} from '@/lib/db';
-import {getSession} from '@/lib/session';
+import { NextRequest } from 'next/server';
+import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
 
+export async function POST(req: NextRequest) {
+    const { token } = await req.json();
 
-export async function POST(req:NextRequest) {
-    const {token} = await req.json();
+    const invite = await db.invite.findFirst({ where: { token } });
 
-    const existing = await db.invite.findFirst({where:{token}});
-
-    if(!existing){
-        return Response.json({error: 'Token not found'}, {status:400})
+    if (!invite) {
+        return Response.json({ error: 'Invalid invite token' }, { status: 400 });
     }
 
-    const now = new Date(); 
-
-    if(now > existing.expiresAt){
-        return Response.json({error: 'Token has expired'}, {status: 401})
+    if (new Date() > invite.expiresAt) {
+        return Response.json({ error: 'Invite has expired' }, { status: 410 });
     }
 
     const session = await getSession();
-
-    if(!session) {
-        return Response.json({error: 'There is no current session'}, {status:401});
+    if (!session) {
+        return Response.json({ error: 'You must be logged in to accept an invite' }, { status: 401 });
     }
 
-    const orgMember = await db.orgMember.findFirst({
-        where: {userId: session.userId, orgId : existing.orgId} 
+    const alreadyMember = await db.orgMember.findFirst({
+        where: { userId: session.userId, orgId: invite.orgId },
     });
 
-    if(orgMember) { 
-        return Response.json({error: 'Already an Organization Member, try to log in'},{status:409});
+    if (alreadyMember) {
+        return Response.json({ error: 'Already a member of this organization' }, { status: 409 });
     }
 
     await db.$transaction([
         db.orgMember.create({
-            data: {userId: session.userId, orgId: existing.orgId, role : 'member'}
+            data: { userId: session.userId, orgId: invite.orgId, role: 'member' },
         }),
-        db.invite.delete({where:{id:existing.id}})
+        db.invite.delete({ where: { id: invite.id } }),
     ]);
 
-    return Response.json({ok:true},{status:200});
-
+    return Response.json({ ok: true, orgId: invite.orgId }, { status: 200 });
 }

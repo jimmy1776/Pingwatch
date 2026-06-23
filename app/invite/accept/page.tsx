@@ -7,8 +7,12 @@ function AcceptInviteForm() {
     const router = useRouter();
     const token = searchParams.get('token');
     const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
     async function handleAccept() {
+        setLoading(true);
+        setError(null);
+
         const res = await fetch('/api/invites/accept', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -16,14 +20,21 @@ function AcceptInviteForm() {
         });
 
         if (!res.ok) {
-            try {
-                const data = await res.json();
-                setError(data.error);
-            } catch {
-                setError('Something went wrong');
-            }
+            const data = await res.json().catch(() => ({}));
+            setError(data.error ?? 'Something went wrong');
+            setLoading(false);
             return;
         }
+
+        const { orgId } = await res.json();
+
+        // Switch session to the newly joined org
+        await fetch('/api/auth/switch-org', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orgId }),
+        });
+
         router.push('/dashboard');
     }
 
@@ -35,9 +46,10 @@ function AcceptInviteForm() {
                 {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
                 <button
                     onClick={handleAccept}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+                    disabled={loading}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
                 >
-                    Accept Invite
+                    {loading ? 'Accepting...' : 'Accept Invite'}
                 </button>
             </div>
         </div>

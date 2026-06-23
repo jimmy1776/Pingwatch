@@ -1,39 +1,30 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { requireOrgRole } from '@/lib/dal';
-import { Resend } from 'resend';
-import crypto from 'crypto';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-export async function POST(
-    req: NextRequest,
+export async function GET(
+    _req: NextRequest,
     { params }: { params: Promise<{ orgId: string }> }
 ) {
     const { orgId } = await params;
-    await requireOrgRole('admin', orgId);
+    await requireOrgRole('member', orgId);
 
-    const { email } = await req.json();
-    if (!email) {
-        return Response.json({ error: 'Email is required' }, { status: 400 });
-    }
-
-    const existing = await db.invite.findFirst({ where: { email, orgId } });
-    if (existing) {
-        return Response.json({ error: 'Invite already sent to this email' }, { status: 409 });
-    }
-
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
-
-    await db.invite.create({ data: { email, orgId, token, expiresAt } });
-
-    await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: email,
-        subject: 'You have been Invited to Pingwatch',
-        html: `<a href="${process.env.NEXTAUTH_URL}/invite/accept?token=${token}">Accept your Invite</a>`,
+    const org = await db.organization.findUnique({
+        where: { id: orgId },
+        select: {
+            id: true,
+            name: true,
+            createdAt: true,
+            members: {
+                select: {
+                    id: true,
+                    role: true,
+                    user: { select: { id: true, email: true } },
+                },
+            },
+        },
     });
 
-    return Response.json({ ok: true }, { status: 201 });
+    if (!org) return Response.json({ error: 'Not found' }, { status: 404 });
+    return Response.json(org);
 }

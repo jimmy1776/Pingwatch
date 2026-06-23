@@ -3,7 +3,7 @@
 ## Step 1 — Project Scaffold ✅
 - Next.js app created with Tailwind CSS
 - Supabase Postgres connected
-- Prisma schema defined (`prisma/schema.prisma`) — all models: User, Organization, OrgMember, Monitor, MonitorCheck, Incident, Subscription, AlertContact
+- Prisma schema defined (`prisma/schema.prisma`) — all models: User, Organization, OrgMember, Monitor, MonitorCheck, Incident, Subscription, AlertContact, Invite
 - `prisma.config.ts` set up for Prisma 7
 - Prisma client generated
 
@@ -17,10 +17,13 @@
 - `app/api/auth/me/route.ts` — returns current user from session
 - `proxy.ts` — route protection (Next.js 16 replacement for middleware.ts); redirects unauthenticated users to /login, authenticated users away from /login and /register
 
-## Step 3 — Orgs + Invite Flow + Roles 🔄
-- [x] Org context — `orgId` stored in JWT session; register and login both set it
-- [ ] Role guards — helper functions in DAL to check owner/admin/member before allowing actions
-- [ ] Invite flow — create invite token, accept invite, add user to org as member
+## Step 3 — Orgs + Invite Flow + Roles ✅
+- `lib/dal.ts` — `requireOrgRole(minimumRole, orgId)` checks membership and rank (member < admin < owner); redirects to /dashboard if unauthorized
+- `app/api/orgs/[orgId]/route.ts` — `GET` returns org details + member list (requires member role)
+- `app/api/orgs/[orgId]/invites/route.ts` — `POST` creates a 48-hour invite token, emails it via Resend (requires admin role)
+- `app/api/invites/accept/route.ts` — `POST` validates token, adds user as member, deletes token; returns `orgId` of the joined org
+- `app/api/auth/switch-org/route.ts` — `POST` verifies membership then re-issues session cookie with new `orgId`
+- `app/invite/accept/page.tsx` — UI page linked from invite email; calls accept then switch-org, redirects to dashboard
 
 ## Steps 4–10 — Not started
 4. Monitor CRUD
