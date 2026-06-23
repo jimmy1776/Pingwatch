@@ -52,10 +52,24 @@ export async function POST(
   }
 
   const subscription = await db.subscription.findUnique({ where: { orgId } })
-  const plan = subscription?.plan ?? 'free'
-  const limits: Record<string, number> = { free: 3, pro: 20, business: Infinity }
-  const monitorCount = await db.monitor.count({ where: { orgId } })
+  const isActiveSub = subscription?.status === 'active' || subscription?.status === 'trialing'
+  const plan = isActiveSub ? (subscription?.plan ?? 'free') : 'free'
 
+  const limits: Record<string, number> = { free: 3, pro: 20, business: Infinity }
+  const intervalLimits: Record<string, number[]> = {
+    free: [300],
+    pro: [60, 300],
+    business: [30, 60, 300],
+  }
+
+  if (!intervalLimits[plan].includes(intervalSecs)) {
+    return Response.json(
+      { error: `Your ${plan} plan does not support ${intervalSecs}s intervals. Upgrade to access faster checks.` },
+      { status: 403 }
+    )
+  }
+
+  const monitorCount = await db.monitor.count({ where: { orgId } })
   if (monitorCount >= limits[plan]) {
     return Response.json(
       { error: `Your ${plan} plan allows a maximum of ${limits[plan]} monitors. Upgrade to add more.` },
