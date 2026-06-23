@@ -11,6 +11,11 @@ async function syncSubscription(sub: Stripe.Subscription, orgId: string) {
     : priceId === process.env.STRIPE_PRICE_BUSINESS ? 'business'
     : 'free'
 
+  // current_period_end is a Unix timestamp present on the Stripe Subscription object
+  // at runtime; SDK v22 types don't expose it directly, so we cast via unknown.
+  const raw = sub as unknown as { current_period_end: number }
+  const currentPeriodEnd = new Date(raw.current_period_end * 1000)
+
   await db.subscription.upsert({
     where: { orgId },
     create: {
@@ -19,13 +24,13 @@ async function syncSubscription(sub: Stripe.Subscription, orgId: string) {
       stripePriceId: priceId,
       plan,
       status: sub.status,
-      currentPeriodEnd: new Date(sub.current_period_end * 1000),
+      currentPeriodEnd,
     },
     update: {
       stripePriceId: priceId,
       plan,
       status: sub.status,
-      currentPeriodEnd: new Date(sub.current_period_end * 1000),
+      currentPeriodEnd,
     },
   })
 }
