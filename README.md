@@ -6,11 +6,13 @@
 ![Deployed on Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)
 ![Stripe](https://img.shields.io/badge/Billing-Stripe-635BFF?logo=stripe&logoColor=white)
 
-**Know when your site goes down — before your users do.**
+**Know when your site goes down -- before your users do.**
 
-PingWatch monitors your websites around the clock and sends you an email the moment something goes wrong — and again when it recovers. Add a URL and PingWatch handles the rest.
+PingWatch monitors your websites around the clock and sends you an email the moment something goes wrong -- and again when it recovers. Add a URL and PingWatch handles the rest.
 
-**[Live demo →](https://pingwatch2.vercel.app)**
+**[Live demo](https://pingwatch2.vercel.app)**
+
+![Dashboard](screenshots/Dashboard.png)
 
 ---
 
@@ -26,17 +28,17 @@ PingWatch monitors your websites around the clock and sends you an email the mom
 ## Architecture
 
 ```
-User request  →  Next.js Route Handlers
-                       ↓
-                  Prisma ORM  →  Supabase Postgres
+User request  ->  Next.js Route Handlers
+                       |
+                  Prisma ORM  ->  Supabase Postgres
 
-Vercel Cron  →  /api/cron/ping  →  fetches all due monitors
-                       ↓
+Vercel Cron  ->  /api/cron/ping  ->  fetches all due monitors
+                       |
             Upstash Redis (last-known status cache)
-                       ↓
+                       |
             Resend  (email alert on state change)
 
-Stripe Webhooks  →  subscription state  →  plan enforcement
+Stripe Webhooks  ->  subscription state  ->  plan enforcement
 ```
 
 ## Plans
@@ -54,8 +56,8 @@ Stripe Webhooks  →  subscription state  →  plan enforcement
 | Frontend | Next.js 15 (App Router) + Tailwind CSS |
 | Backend | Next.js Route Handlers |
 | Database | Supabase (hosted Postgres) + Prisma ORM |
-| Auth | JWT (`jose`) + bcrypt, httpOnly cookie sessions |
-| Background jobs | Vercel Cron → `/api/cron/ping` |
+| Auth | JWT (jose) + bcrypt, httpOnly cookie sessions |
+| Background jobs | Vercel Cron -> /api/cron/ping |
 | Email | Resend |
 | Billing | Stripe Checkout + Webhooks |
 | Cache | Upstash Redis |
@@ -65,11 +67,11 @@ Stripe Webhooks  →  subscription state  →  plan enforcement
 
 **Multi-tenancy:** Each user registers into an organization. Monitors belong to orgs, not individual users. Teammates share the same dashboard and monitor pool. Plan limits apply at the org level.
 
-**Pinger:** A Vercel Cron job fires on a schedule and hits `/api/cron/ping`. That route fetches all active monitors due for a check, records the result in `MonitorCheck`, and compares against the last-known status cached in Upstash Redis to detect transitions cheaply without extra DB reads.
+**Pinger:** A Vercel Cron job fires on a schedule and hits /api/cron/ping. That route fetches all active monitors due for a check, records the result in MonitorCheck, and compares against the last-known status cached in Upstash Redis to detect transitions cheaply without extra DB reads.
 
-**Incident detection:** When a monitor flips from up → down, an `Incident` row is created and an alert email goes out via Resend. When it recovers, the incident is resolved and a second email is sent.
+**Incident detection:** When a monitor flips from up -> down, an Incident row is created and an alert email goes out via Resend. When it recovers, the incident is resolved and a second email is sent.
 
-**Billing:** Stripe Checkout handles plan upgrades. Webhooks are the source of truth for subscription state — the app never trusts client-side signals.
+**Billing:** Stripe Checkout handles plan upgrades. Webhooks are the source of truth for subscription state -- the app never trusts client-side signals.
 
 ## Getting Started
 
@@ -77,9 +79,9 @@ Stripe Webhooks  →  subscription state  →  plan enforcement
 git clone https://github.com/jimmy1776/Pingwatch
 cd Pingwatch
 npm install
-cp .env.example .env.local   # fill in your keys
+cp .env.example .env.local
 npx prisma migrate dev
 npm run dev
 ```
 
-See `.env.example` for all required environment variables.
+See .env.example for all required environment variables.
