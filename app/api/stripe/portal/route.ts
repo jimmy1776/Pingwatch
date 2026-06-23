@@ -13,13 +13,21 @@ export async function POST(_req: NextRequest) {
   })
 
   if (!subscription || subscription.status !== 'active') {
-    return Response.json({ error: 'No active subscription' }, { status: 404 })
+    return Response.json({ error: 'No active subscription found' }, { status: 404 })
   }
 
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: subscription.stripeCustomerId,
-    return_url: `${process.env.NEXTAUTH_URL}/dashboard`,
-  })
+  if (!subscription.stripeCustomerId) {
+    return Response.json({ error: 'No Stripe customer linked to this account' }, { status: 400 })
+  }
 
-  return Response.json({ url: portalSession.url })
+  try {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: subscription.stripeCustomerId,
+      return_url: `${process.env.NEXTAUTH_URL}/dashboard`,
+    })
+    return Response.json({ url: portalSession.url })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Stripe error'
+    return Response.json({ error: message }, { status: 500 })
+  }
 }

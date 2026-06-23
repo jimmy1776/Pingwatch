@@ -11,13 +11,13 @@ export default function ManageBillingButton() {
     try {
       const res = await fetch('/api/stripe/portal', { method: 'POST' })
       const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
+      if (!res.ok || !data.url) {
         setError(data.error ?? 'Could not open billing portal')
+        return
       }
+      window.location.href = data.url
     } catch {
-      setError('Something went wrong')
+      setError('Network error — please try again')
     } finally {
       setLoading(false)
     }
